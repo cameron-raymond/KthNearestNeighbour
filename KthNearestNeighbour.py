@@ -17,12 +17,11 @@ def main():
     for obj in testSet:
         neighbours = getNeighbours(trainingSet,obj,k)
         objClass = classify(neighbours)
-        predictions.append(objClass)
+        predictions.append({'data': obj, 'prediction': objClass, 'correct': objClass == obj[-1]})
+    colourCodes = {'Iris-setosa': '#ca5b78', 'Iris-versicolor': '#3f9e66', 'Iris-virginica':'#059dc5','Iris-setosaCor': '#f89675', 'Iris-versicolorCor': '#73e1a7','Iris-virginicaCor':'#64d4fd','Iris-setosaWro': '#742319', 'Iris-versicolorWro': '#22501d','Iris-virginicaWro':'#224060' }
+    plotSet(trainingSet,colourCodes,predictions)
 
-    colourCodes = {'Iris-setosa': 'r', 'Iris-versicolor': 'g','Iris-virginica':'b'}
-    plotSet(trainingSet,colourCodes)
-
-def plotSet(data,colourCodes):
+def plotSet(data,colourCodes, predictions=None):
     xs = []
     ys = []
     zs = []
@@ -34,6 +33,19 @@ def plotSet(data,colourCodes):
         zs = obj[2]
         col = colourCodes[obj[-1]]
         ax.scatter(xs, ys, zs, c=col,marker='o')
+
+    for obj in predictions:
+        xs = obj['data'][0]
+        ys = obj['data'][1]
+        zs = obj['data'][2]
+        col = obj['data'][-1]
+        if obj['correct']:
+            col +='Cor'
+        else:
+            col+='Wro'
+        col = colourCodes[col]
+        ax.scatter(xs, ys, zs, c=col,marker='o')
+
         
     ax.set_xlabel('Sepal Length (cm)')
     ax.set_ylabel('Sepal Width (cm)')
