@@ -1,6 +1,7 @@
 import csv
 import random
 import math
+import statistics
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 
@@ -9,22 +10,22 @@ import matplotlib.pyplot as plt
 def main():
     trainingSet = []
     testSet = []
-    split = 0.8
+    split = 0.70
     filename = 'iris.data'
     loadDataset(filename,split,trainingSet,testSet)
     predictions = []
-    k = 4
+    k = 5
+
     for obj in testSet:
         neighbours = getNeighbours(trainingSet,obj,k)
-        objClass = classify(neighbours)
-        predictions.append({'data': obj, 'prediction': objClass, 'correct': objClass == obj[-1]})
+        objClass = classify(neighbours,True)
+        predictions.append({'data': obj, 'prediction':objClass, 'correct': objClass == obj[-1]})
     colourCodes = {'Iris-setosa': '#ca5b78', 'Iris-versicolor': '#3f9e66', 'Iris-virginica':'#059dc5','Iris-setosaCor': '#f89675', 'Iris-versicolorCor': '#73e1a7','Iris-virginicaCor':'#64d4fd','Iris-setosaWro': '#742319', 'Iris-versicolorWro': '#22501d','Iris-virginicaWro':'#224060' }
+    print(getAccuracy(testSet,predictions))
+
     plotSet(trainingSet,colourCodes,predictions)
 
 def plotSet(data,colourCodes, predictions=None):
-    xs = []
-    ys = []
-    zs = []
     fig = plt.figure()
     ax = fig.add_subplot(111, projection='3d')
     for obj in data:
@@ -59,7 +60,7 @@ def plotSet(data,colourCodes, predictions=None):
 def getAccuracy(testSet, predictions):
 	correct = 0
 	for x in range(len(testSet)):
-		if testSet[x][-1] == predictions[x]:
+		if testSet[x][-1] == predictions[x]['prediction']:
 			correct += 1
 	return (correct/float(len(testSet))) * 100.0
 
@@ -71,17 +72,33 @@ def getAccuracy(testSet, predictions):
         for each neighbour look at its class, if a => aCount +=1 otherwise bCount +=1
         return the class that's the largest
 '''
-def classify(neighbours):
+def classify(neighbours,weight=False):
+    minDist = neighbours[0][1]
+    maxDist = neighbours[-1][1]
     countHash = {}
     for neighbour in neighbours:
         nClass = neighbour[0][-1]
+
         if nClass in countHash:
-            countHash[nClass] += 1
+            if weight:
+                countHash[nClass] += 1-(neighbour[1]-minDist)/(maxDist-minDist) #Weight counting by the normalized distance
+            else:
+                countHash[nClass] += 1
         else:
-            countHash[nClass] = 1
-    sorted_by_value = sorted(countHash.items(), key=lambda kv: kv[1])
+            if weight:
+                countHash[nClass] = 1-(neighbour[1]-minDist)/(maxDist-minDist) #Weight counting by the normalized distance
+            else:
+                countHash[nClass] = 1
+    sorted_by_value = sorted(countHash.items(), key=lambda kv: kv[1],reverse=True)
     return sorted_by_value[0][0]
 
+'''
+    Normalize values between 0 and 1
+'''
+def normalizeVals(aList):
+    minEl = min(aList)
+    maxEl = max(aList)
+    return [(el-minEl)/(maxEl-minEl) for el in aList]
 
 '''
     Approach: Find all distances between our testInstance and our trainingset, sort it, take the k closest
@@ -92,7 +109,7 @@ def getNeighbours(trainingSet,testInstance,k):
         dist = eucDistance(testInstance,obj,4)
         distances.append((obj,dist))
     findClosest = sorted(distances,key=lambda x: x[1])
-    return [findClosest[k] for i in range(k)]        
+    return findClosest[:k]      
 
 '''
     Since the every value for the iris data is numeric and they all use the same units we can just use the 
